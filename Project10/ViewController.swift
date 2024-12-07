@@ -23,6 +23,7 @@ class ViewController: UICollectionViewController {
             fatalError("Unable to dequeue PersonCell")
         }
         return cell
+        //
     }
 }
 
