@@ -14,6 +14,18 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addNewPerson))
+        
+        let defaults = UserDefaults.standard
+        
+        if let savedPeople = defaults.data(forKey: "people") {
+            do {
+                if let decodedPeople = try NSKeyedUnarchiver.unarchivedObject(ofClasses: [NSArray.self, Person.self], from: savedPeople) as? [Person] {
+                    people = decodedPeople
+                }
+            } catch {
+                print("Failed to load people: \(error.localizedDescription)")
+            }
+        }
     }
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -26,7 +38,6 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         }
         
         let person = people[indexPath.item]
-        
         cell.name.text = person.name
         
         let path = getDocumentDirectory().appendingPathComponent(person.image)
@@ -84,6 +95,7 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         
         let person = Person(name: "Unknown", image: imageName)
         people.append(person)
+        save()
         collectionView.reloadData()
         
         dismiss(animated: true)
@@ -106,6 +118,7 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
             renameAC.addAction(UIAlertAction(title: "OK", style: .default) { [weak self, weak renameAC] _ in
                 guard let newName = renameAC?.textFields?[0].text else { return }
                 person.name = newName
+                self?.save()
                 self?.collectionView.reloadData()
             })
             renameAC.addAction(UIAlertAction(title: "Cancel", style: .cancel))
@@ -139,5 +152,15 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         
         people.remove(at: indexPath.item)
         collectionView.deleteItems(at: [indexPath])
+    }
+    
+    func save() {
+        do {
+            let savedData = try NSKeyedArchiver.archivedData(withRootObject: people, requiringSecureCoding: false)
+            let defaults = UserDefaults.standard
+            defaults.set(savedData, forKey: "people")
+        } catch {
+            print("Failed to save people: \(error.localizedDescription)")
+        }
     }
 }
